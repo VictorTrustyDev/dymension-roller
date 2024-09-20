@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"cosmossdk.io/errors"
 
@@ -197,25 +198,40 @@ func HandleApiEIbcClientStatus(c *gin.Context) {
 	// cfg := w.Config()
 
 	type Status struct {
-		Running       bool    `json:"running"`
-		PID           int     `json:"pid"`
-		Denom         string  `json:"denom"`
-		MinFeePercent float64 `json:"min_fee_percent"`
+		Running         bool    `json:"running"`
+		PID             int     `json:"pid,omitempty"`
+		Denom           string  `json:"denom,omitempty"`
+		MinFeePercent   float64 `json:"min_fee_percent,omitempty"`
+		AdditionalError string  `json:"additional_error,omitempty"`
 	}
+	var additionalError string
 
 	proc := cache.GetEIbcClientProcess()
 	var pid int
 	if proc != nil {
 		pid = proc.Pid
+
+		// ensure process still alive
+		if err := proc.Signal(syscall.Signal(0)); err != nil {
+			errMsg := fmt.Sprintf("eIBC client process %d found dead: %v", pid, err)
+			cache.AppendEIbcClientLog(errMsg)
+
+			cache.SetEIbcClientProcess(nil)
+			proc = nil
+			pid = 0
+
+			additionalError = errMsg
+		}
 	}
 
 	denom, minFeePercent := cache.GetEIbcClientArgs()
 
 	w.PrepareDefaultSuccessResponse(Status{
-		Running:       proc != nil,
-		PID:           pid,
-		Denom:         denom,
-		MinFeePercent: minFeePercent,
+		Running:         proc != nil,
+		PID:             pid,
+		Denom:           denom,
+		MinFeePercent:   minFeePercent,
+		AdditionalError: additionalError,
 	}).SendResponse()
 }
 

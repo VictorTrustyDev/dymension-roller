@@ -21,6 +21,7 @@ const reloadPartialEIbcClientStatus = () => {
         const inputMinFee = $('#eibc-client-min-fee');
 
         eIbcClientStarted = data.result.running === true;
+        const additionalError = data.result.additional_error;
         if (firstLoadEIbcClientStatus) {
             $('#eibc-client-start').prop('disabled', false);
             inputDenom.prop('disabled', false);
@@ -44,6 +45,10 @@ const reloadPartialEIbcClientStatus = () => {
         }
         conditionalReplace(inputDenom, data.result.denom);
         conditionalReplace(inputMinFee, data.result.min_fee_percent);
+        if (additionalError && additionalError !== "") {
+            addError(additionalError);
+        }
+
         switchStateEIbcClientElements();
     }, (data) => {
         addError('failed to update eIBC client status', data);
