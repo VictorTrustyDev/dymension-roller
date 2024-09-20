@@ -100,6 +100,7 @@ const switchStateEIbcClientElements = () => {
     }
     inputDenom.prop('disabled', started);
     inputMinFee.prop('disabled', started);
+    btnStart.prop('disabled', false);
 }
 
 const handleApiResponse = (data, onSuccess, onError) => {
