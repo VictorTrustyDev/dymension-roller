@@ -52,6 +52,10 @@ const reloadPartialEIbcClientStatus = () => {
         switchStateEIbcClientElements();
     }, (data) => {
         addError('failed to update eIBC client status', data);
+    }, () => {
+        const btnStart = $('#eibc-client-start');
+        btnStart.prop('disabled', true);
+        btnStart.val('Unknown status');
     })
 }
 
@@ -128,7 +132,7 @@ const addError = (message, err) => {
     errorElement.appendChild(div);
 }
 
-const postJson = function (actionName, url, data, onSuccess, onError) {
+const postJson = function (actionName, url, data, onSuccess, onError, onPostError) {
     $.ajax({
         type: "POST",
         url: url,
@@ -139,17 +143,23 @@ const postJson = function (actionName, url, data, onSuccess, onError) {
             handleApiResponse(data, onSuccess, onError);
         },
         error: (xhr, status, error) => {
-            let errMsg = `failed to [${actionName}]`;
-            if (status) {
-                errMsg += `, text status = '${status}'`;
+            try {
+                let errMsg = `failed to [${actionName}]`;
+                if (status) {
+                    errMsg += `, text status = '${status}'`;
+                }
+                if (xhr && xhr.responseText) {
+                    errMsg += `, response text = '${xhr.responseText}'`;
+                }
+                if (error) {
+                    errMsg += `, error = '${error}'`;
+                }
+                addError(errMsg);
+            } finally {
+                if (onPostError) {
+                    onPostError();
+                }
             }
-            if (xhr && xhr.responseText) {
-                errMsg += `, response text = '${xhr.responseText}'`;
-            }
-            if (error) {
-                errMsg += `, error = '${error}'`;
-            }
-            addError(errMsg);
         }
     })
 }
